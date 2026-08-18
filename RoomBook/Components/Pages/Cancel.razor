@@ -1,0 +1,130 @@
+@page "/cancel"
+@rendermode InteractiveServer
+@inject RoomBook.Services.RoomBookService RoomService
+
+<PageTitle>RoomBook – Reservation stornieren</PageTitle>
+
+<h1>❌ Reservation stornieren</h1>
+<p class="text-muted">Geben Sie die Reservations-ID ein oder wählen Sie aus der Liste.</p>
+
+@if (_successMessage != null)
+{
+    <div class="alert alert-success" role="alert" aria-live="polite">
+        <span aria-hidden="true">✅</span> @_successMessage
+        <div class="mt-2">
+            <button class="btn btn-outline-secondary btn-sm" @onclick="Reset">Weitere Stornierung</button>
+            <a href="/" class="btn btn-outline-primary btn-sm ms-2">Zur Übersicht</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-5">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h2 class="card-title h5">Stornierung per ID</h2>
+                    @if (_errorMessage != null)
+                    {
+                        <div class="alert alert-danger" role="alert" aria-live="assertive">
+                            <span aria-hidden="true">⚠️</span> @_errorMessage
+                        </div>
+                    }
+                    <div class="mb-3">
+                        <label for="resId" class="form-label fw-bold">Reservations-ID <span class="text-danger" aria-label="Pflichtfeld">*</span></label>
+                        <input id="resId" type="number" class="form-control" min="1"
+                               @bind="_reservationId" aria-required="true"
+                               aria-describedby="resIdHelp" placeholder="z.B. 3" />
+                        <div id="resIdHelp" class="form-text">Die ID finden Sie in der Bestätigung Ihrer Reservation.</div>
+                    </div>
+                    <button class="btn btn-danger" @onclick="HandleCancel" aria-label="Reservation stornieren">❌ Jetzt stornieren</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-7">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title h5">Alle aktuellen Reservationen</h2>
+                    @{
+                        var all = RoomService.GetReservations()
+                            .OrderBy(r => r.Date).ThenBy(r => r.StartTime).ToList();
+                    }
+                    @if (!all.Any())
+                    {
+                        <p class="text-muted"><span aria-hidden="true">📭</span> Keine Reservationen vorhanden.</p>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover" aria-label="Liste aller Reservationen">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">ID</th>
+                                        <th scope="col">Datum</th>
+                                        <th scope="col">Zeit</th>
+                                        <th scope="col">Raum</th>
+                                        <th scope="col">Person</th>
+                                        <th scope="col">Aktion</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var r in all)
+                                    {
+                                        <tr>
+                                            <td>@r.Id</td>
+                                            <td>@r.Date.ToString("dd.MM.yyyy")</td>
+                                            <td>@r.StartTime.ToString("HH:mm")–@r.EndTime.ToString("HH:mm")</td>
+                                            <td>@(r.Room?.Name ?? "?")</td>
+                                            <td>@r.EmployeeName</td>
+                                            <td>
+                                                <button class="btn btn-outline-danger btn-sm"
+                                                        @onclick="() => SelectReservation(r.Id)"
+                                                        aria-label="Reservation #@r.Id von @r.EmployeeName stornieren">
+                                                    ❌
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private int? _reservationId;
+    private string? _successMessage;
+    private string? _errorMessage;
+
+    private void SelectReservation(int id)
+    {
+        _reservationId = id;
+        _errorMessage = null;
+    }
+
+    private void HandleCancel()
+    {
+        _errorMessage = null;
+        if (_reservationId == null || _reservationId <= 0)
+        {
+            _errorMessage = "Bitte geben Sie eine gültige Reservations-ID ein.";
+            return;
+        }
+        var (success, message) = RoomService.CancelReservation(_reservationId.Value);
+        if (success)
+            _successMessage = message;
+        else
+            _errorMessage = message;
+    }
+
+    private void Reset()
+    {
+        _reservationId = null;
+        _successMessage = null;
+        _errorMessage = null;
+    }
+}

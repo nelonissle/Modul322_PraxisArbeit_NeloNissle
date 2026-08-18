@@ -1,0 +1,106 @@
+@page "/rooms"
+@rendermode InteractiveServer
+@inject RoomBook.Services.RoomBookService RoomService
+
+<PageTitle>RoomBook – Raumsuche</PageTitle>
+
+<h1>🔍 Raumsuche</h1>
+<p class="text-muted">Filtern Sie die Räume nach Ihren Anforderungen.</p>
+
+<div class="card mb-4 shadow-sm">
+    <div class="card-body">
+        <h2 class="card-title h5">Filter</h2>
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label for="minCapacity" class="form-label">Mindestkapazität (Personen)</label>
+                <input id="minCapacity" type="number" class="form-control" min="1" max="30"
+                       @bind="MinCapacity" aria-label="Mindestkapazität in Personen" placeholder="z.B. 6" />
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="filterBeamer" @bind="FilterBeamer" />
+                    <label class="form-check-label" for="filterBeamer">Beamer</label>
+                </div>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="filterVideo" @bind="FilterVideo" />
+                    <label class="form-check-label" for="filterVideo">Videokonferenz</label>
+                </div>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="filterWhiteboard" @bind="FilterWhiteboard" />
+                    <label class="form-check-label" for="filterWhiteboard">Whiteboard</label>
+                </div>
+            </div>
+        </div>
+        <div class="mt-3">
+            <button class="btn btn-secondary btn-sm" @onclick="ResetFilter" aria-label="Filter zurücksetzen">Filter zurücksetzen</button>
+        </div>
+    </div>
+</div>
+
+@{
+    var filtered = RoomService.GetRooms()
+        .Where(r => r.Capacity >= (MinCapacity ?? 0))
+        .Where(r => !FilterBeamer || r.HasBeamer)
+        .Where(r => !FilterVideo || r.HasVideoConference)
+        .Where(r => !FilterWhiteboard || r.HasWhiteboard)
+        .ToList();
+}
+
+@if (!filtered.Any())
+{
+    <div class="alert alert-info" role="alert" aria-live="polite">
+        <span aria-hidden="true">ℹ️</span> Keine Räume entsprechen den Filterkriterien. Bitte Filter anpassen.
+    </div>
+}
+else
+{
+    <p><strong>@filtered.Count</strong> Raum/Räume gefunden:</p>
+    <div class="row g-3">
+        @foreach (var room in filtered)
+        {
+            var occupied = RoomService.RoomIsOccupiedNow(room.Id);
+            var statusText = occupied ? "Belegt" : "Frei";
+            var statusIcon = occupied ? "🔴" : "🟢";
+            var statusClass = occupied ? "badge bg-danger" : "badge bg-success";
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h3 class="card-title h5">@room.Name</h3>
+                            <span class="@statusClass" role="status" aria-label="Status: @statusText">
+                                <span aria-hidden="true">@statusIcon</span> @statusText
+                            </span>
+                        </div>
+                        <p class="card-text text-muted small">@room.Description</p>
+                        <ul class="list-unstyled small mb-3">
+                            <li><span aria-hidden="true">👥</span> Kapazität: <strong>@room.Capacity Personen</strong></li>
+                            @if (room.HasBeamer) { <li><span aria-hidden="true">📽️</span> Beamer vorhanden</li> }
+                            @if (room.HasVideoConference) { <li><span aria-hidden="true">📹</span> Videokonferenz</li> }
+                            @if (room.HasWhiteboard) { <li><span aria-hidden="true">📋</span> Whiteboard</li> }
+                        </ul>
+                        <a href="/rooms/@room.Id" class="btn btn-outline-primary btn-sm" aria-label="Details zu @room.Name anzeigen">Details anzeigen</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private int? MinCapacity;
+    private bool FilterBeamer;
+    private bool FilterVideo;
+    private bool FilterWhiteboard;
+
+    private void ResetFilter()
+    {
+        MinCapacity = null;
+        FilterBeamer = false;
+        FilterVideo = false;
+        FilterWhiteboard = false;
+    }
+}

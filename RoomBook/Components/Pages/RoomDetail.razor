@@ -1,0 +1,120 @@
+@page "/rooms/{RoomId:int}"
+@rendermode InteractiveServer
+@inject RoomBook.Services.RoomBookService RoomService
+
+<PageTitle>RoomBook – Raumdetail</PageTitle>
+
+@if (_room == null)
+{
+    <div class="alert alert-danger" role="alert">
+        <span aria-hidden="true">⚠️</span> Raum nicht gefunden.
+    </div>
+    <a href="/rooms" class="btn btn-secondary">← Zurück zur Raumliste</a>
+}
+else
+{
+    var occupied = RoomService.RoomIsOccupiedNow(_room.Id);
+    var statusText = occupied ? "Jetzt belegt" : "Jetzt frei";
+    var statusIcon = occupied ? "🔴" : "🟢";
+    var statusBadge = occupied ? "badge bg-danger fs-6" : "badge bg-success fs-6";
+
+    <div class="d-flex align-items-center gap-3 mb-3">
+        <a href="/rooms" class="btn btn-outline-secondary btn-sm" aria-label="Zurück zur Raumliste">← Raumliste</a>
+        <h1 class="mb-0">@_room.Name</h1>
+        <span class="@statusBadge" role="status" aria-label="Aktueller Status: @statusText">
+            <span aria-hidden="true">@statusIcon</span> @statusText
+        </span>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h2 class="card-title h5">Raumdetails</h2>
+                    <p>@_room.Description</p>
+                    <table class="table table-sm" aria-label="Raumausstattung">
+                        <tbody>
+                            <tr>
+                                <th scope="row">Kapazität</th>
+                                <td><span aria-hidden="true">👥</span> @_room.Capacity Personen</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Beamer</th>
+                                <td>
+                                    @if (_room.HasBeamer)
+                                    { <span class="text-success" aria-label="Ja, Beamer vorhanden"><span aria-hidden="true">✅</span> Ja</span> }
+                                    else
+                                    { <span class="text-muted" aria-label="Kein Beamer"><span aria-hidden="true">⛔</span> Nein</span> }
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Videokonferenz</th>
+                                <td>
+                                    @if (_room.HasVideoConference)
+                                    { <span class="text-success" aria-label="Ja, Videokonferenz vorhanden"><span aria-hidden="true">✅</span> Ja</span> }
+                                    else
+                                    { <span class="text-muted" aria-label="Keine Videokonferenz"><span aria-hidden="true">⛔</span> Nein</span> }
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Whiteboard</th>
+                                <td>
+                                    @if (_room.HasWhiteboard)
+                                    { <span class="text-success" aria-label="Ja, Whiteboard vorhanden"><span aria-hidden="true">✅</span> Ja</span> }
+                                    else
+                                    { <span class="text-muted" aria-label="Kein Whiteboard"><span aria-hidden="true">⛔</span> Nein</span> }
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h2 class="card-title h5">Heutige Reservationen</h2>
+                    @{
+                        var today = DateOnly.FromDateTime(DateTime.Today);
+                        var todayRes = RoomService.GetReservationsForRoom(_room.Id)
+                            .Where(r => r.Date == today)
+                            .OrderBy(r => r.StartTime)
+                            .ToList();
+                    }
+                    @if (!todayRes.Any())
+                    {
+                        <p class="text-muted"><span aria-hidden="true">📭</span> Keine Reservationen für heute.</p>
+                    }
+                    else
+                    {
+                        <ul class="list-group list-group-flush" aria-label="Heutige Reservationen">
+                            @foreach (var r in todayRes)
+                            {
+                                <li class="list-group-item">
+                                    <strong>@r.StartTime.ToString("HH:mm") – @r.EndTime.ToString("HH:mm")</strong><br />
+                                    <span class="text-muted small">@r.EmployeeName@(string.IsNullOrEmpty(r.Notes) ? "" : $" – {r.Notes}")</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <a href="/reserve?roomId=@_room.Id" class="btn btn-success" aria-label="@_room.Name reservieren">📅 Diesen Raum reservieren</a>
+        <a href="/rooms" class="btn btn-outline-secondary" aria-label="Zurück zur Raumliste">← Zurück</a>
+    </div>
+}
+
+@code {
+    [Parameter] public int RoomId { get; set; }
+
+    private RoomBook.Models.Room? _room;
+
+    protected override void OnParametersSet()
+    {
+        _room = RoomService.GetRoom(RoomId);
+    }
+}
