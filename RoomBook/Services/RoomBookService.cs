@@ -70,7 +70,7 @@ public class RoomBookService
         if (reservation.EndTime <= reservation.StartTime)
             return (false, "Die Endzeit muss nach der Startzeit liegen.");
 
-        if (!IsRoomAvailable(reservation.RoomId, reservation.Date, reservation.StartTime, reservation.EndTime))
+        if (!IsRoomAvailable(reservation.RoomId ?? 0, reservation.Date, reservation.StartTime, reservation.EndTime))
             return (false, "Der Raum ist in diesem Zeitfenster bereits belegt. Bitte wählen Sie ein anderes Zeitfenster.");
 
         var room = _rooms.FirstOrDefault(r => r.Id == reservation.RoomId);

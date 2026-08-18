@@ -43,7 +43,7 @@ else
                     <label for="roomSelect" class="form-label fw-bold">Sitzungszimmer <span class="text-danger" aria-label="Pflichtfeld">*</span></label>
                     <InputSelect id="roomSelect" class="form-select" @bind-Value="_reservation.RoomId"
                                  aria-required="true" aria-describedby="roomHelp">
-                        <option value="0">-- Bitte Raum wählen --</option>
+                        <option value="">-- Bitte Raum wählen --</option>
                         @foreach (var room in RoomService.GetRooms())
                         {
                             <option value="@room.Id">@room.Name (max. @room.Capacity Personen)</option>
@@ -122,7 +122,7 @@ else
     {
         _errorMessage = null;
 
-        if (_reservation.RoomId == 0)
+        if (_reservation.RoomId == null || _reservation.RoomId == 0)
         {
             _errorMessage = "Bitte wählen Sie einen Raum aus.";
             return;
@@ -130,9 +130,14 @@ else
 
         var (success, message) = RoomService.CreateReservation(_reservation);
         if (success)
+        {
+            _reservation = new RoomBook.Models.Reservation();
             _successMessage = message;
+        }
         else
+        {
             _errorMessage = message;
+        }
     }
 
     private void ResetForm()

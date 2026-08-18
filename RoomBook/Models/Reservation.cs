@@ -11,7 +11,7 @@ public class Reservation
     public string EmployeeName { get; set; } = "";
 
     [Required(ErrorMessage = "Raum ist erforderlich.")]
-    public int RoomId { get; set; }
+    public int? RoomId { get; set; }
 
     [Required(ErrorMessage = "Datum ist erforderlich.")]
     public DateOnly Date { get; set; } = DateOnly.FromDateTime(DateTime.Today);
