@@ -1,0 +1,149 @@
+@page "/reserve"
+@rendermode InteractiveServer
+@inject RoomBook.Services.RoomBookService RoomService
+
+<PageTitle>RoomBook – Reservation erfassen</PageTitle>
+
+<h1>📅 Reservation erfassen</h1>
+<p class="text-muted">Füllen Sie alle Pflichtfelder aus, um einen Sitzungsraum zu reservieren.</p>
+
+@if (_successMessage != null)
+{
+    <div class="alert alert-success" role="alert" aria-live="polite">
+        <span aria-hidden="true">✅</span> @_successMessage
+        <div class="mt-2">
+            <button class="btn btn-success btn-sm" @onclick="ResetForm">Neue Reservation erstellen</button>
+            <a href="/rooms" class="btn btn-outline-secondary btn-sm ms-2">Zur Raumliste</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm" style="max-width: 640px;">
+        <div class="card-body">
+            <EditForm Model="_reservation" OnValidSubmit="HandleSubmit" aria-label="Reservationsformular">
+                <DataAnnotationsValidator />
+
+                @if (_errorMessage != null)
+                {
+                    <div class="alert alert-danger" role="alert" aria-live="assertive">
+                        <span aria-hidden="true">⚠️</span> @_errorMessage
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <label for="employeeName" class="form-label fw-bold">Mitarbeitername <span class="text-danger" aria-label="Pflichtfeld">*</span></label>
+                    <InputText id="employeeName" class="form-control" @bind-Value="_reservation.EmployeeName"
+                               placeholder="z.B. Anna Müller" aria-required="true" aria-describedby="employeeNameHelp" />
+                    <div id="employeeNameHelp" class="form-text">Ihr vollständiger Vor- und Nachname.</div>
+                    <ValidationMessage For="() => _reservation.EmployeeName" class="text-danger small" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="roomSelect" class="form-label fw-bold">Sitzungszimmer <span class="text-danger" aria-label="Pflichtfeld">*</span></label>
+                    <InputSelect id="roomSelect" class="form-select" @bind-Value="_reservation.RoomId"
+                                 aria-required="true" aria-describedby="roomHelp">
+                        <option value="">-- Bitte Raum wählen --</option>
+                        @foreach (var room in RoomService.GetRooms())
+                        {
+                            <option value="@room.Id">@room.Name (max. @room.Capacity Personen)</option>
+                        }
+                    </InputSelect>
+                    <div id="roomHelp" class="form-text">Wählen Sie einen passenden Sitzungsraum aus.</div>
+                    <ValidationMessage For="() => _reservation.RoomId" class="text-danger small" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="resDate" class="form-label fw-bold">Datum <span class="text-danger" aria-label="Pflichtfeld">*</span></label>
+                    <InputDate id="resDate" class="form-control" @bind-Value="_reservation.Date"
+                               aria-required="true" min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                    <ValidationMessage For="() => _reservation.Date" class="text-danger small" />
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <label for="startTime" class="form-label fw-bold">Startzeit <span class="text-danger" aria-label="Pflichtfeld">*</span></label>
+                        <input id="startTime" type="time" class="form-control" value="@_reservation.StartTime.ToString("HH:mm")"
+                               @onchange="e => OnStartTimeChange(e.Value?.ToString())"
+                               aria-required="true" aria-describedby="timeHelp" />
+                    </div>
+                    <div class="col-6">
+                        <label for="endTime" class="form-label fw-bold">Endzeit <span class="text-danger" aria-label="Pflichtfeld">*</span></label>
+                        <input id="endTime" type="time" class="form-control" value="@_reservation.EndTime.ToString("HH:mm")"
+                               @onchange="e => OnEndTimeChange(e.Value?.ToString())"
+                               aria-required="true" aria-describedby="timeHelp" />
+                    </div>
+                    <div class="col-12">
+                        <div id="timeHelp" class="form-text">Format: HH:MM (z.B. 09:00 – 10:30). Mindestdauer: 30 Minuten.</div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="notes" class="form-label">Bemerkungen (optional)</label>
+                    <InputTextArea id="notes" class="form-control" @bind-Value="_reservation.Notes"
+                                   rows="2" placeholder="z.B. Kundenpräsentation, Teambesprechung..." />
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-success" aria-label="Reservation jetzt speichern">✅ Reservieren</button>
+                    <button type="button" class="btn btn-outline-secondary" @onclick="ResetForm" aria-label="Formular zurücksetzen">Zurücksetzen</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [SupplyParameterFromQuery] public int? RoomId { get; set; }
+
+    private RoomBook.Models.Reservation _reservation = new();
+    private string? _successMessage;
+    private string? _errorMessage;
+
+    protected override void OnParametersSet()
+    {
+        if (RoomId.HasValue && RoomId.Value > 0)
+            _reservation.RoomId = RoomId.Value;
+    }
+
+    private void OnStartTimeChange(string? value)
+    {
+        if (TimeOnly.TryParse(value, out var t))
+            _reservation.StartTime = t;
+    }
+
+    private void OnEndTimeChange(string? value)
+    {
+        if (TimeOnly.TryParse(value, out var t))
+            _reservation.EndTime = t;
+    }
+
+    private void HandleSubmit()
+    {
+        _errorMessage = null;
+
+        if (_reservation.RoomId == null || _reservation.RoomId == 0)
+        {
+            _errorMessage = "Bitte wählen Sie einen Raum aus.";
+            return;
+        }
+
+        var (success, message) = RoomService.CreateReservation(_reservation);
+        if (success)
+        {
+            _reservation = new RoomBook.Models.Reservation();
+            _successMessage = message;
+        }
+        else
+        {
+            _errorMessage = message;
+        }
+    }
+
+    private void ResetForm()
+    {
+        _reservation = new RoomBook.Models.Reservation();
+        _successMessage = null;
+        _errorMessage = null;
+    }
+}

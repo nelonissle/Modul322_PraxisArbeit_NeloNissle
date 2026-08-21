@@ -1,0 +1,53 @@
+@page "/"
+@rendermode InteractiveServer
+
+<PageTitle>RoomBook – Übersicht</PageTitle>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h1>🏢 Willkommen bei RoomBook</h1>
+        <p class="lead">Das Sitzungszimmer-Reservationssystem der Neumann Consulting AG</p>
+        <p>Reservieren Sie schnell und einfach einen unserer sechs Sitzungszimmer für Ihre Meetings.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <div class="display-4 mb-3" aria-hidden="true">🔍</div>
+                <h2 class="card-title h4">Raumsuche</h2>
+                <p class="card-text">Finden Sie den passenden Raum anhand von Kapazität, Ausstattung und Verfügbarkeit.</p>
+                <a href="/rooms" class="btn btn-primary" aria-label="Zur Raumsuche navigieren">Räume suchen</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <div class="display-4 mb-3" aria-hidden="true">📅</div>
+                <h2 class="card-title h4">Reservieren</h2>
+                <p class="card-text">Reservieren Sie einen Sitzungsraum für Ihr Meeting direkt und unkompliziert.</p>
+                <a href="/reserve" class="btn btn-success" aria-label="Neue Reservation erstellen">Jetzt reservieren</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <div class="display-4 mb-3" aria-hidden="true">❌</div>
+                <h2 class="card-title h4">Stornieren</h2>
+                <p class="card-text">Bestehende Reservation stornieren und den Raum für andere freigeben.</p>
+                <a href="/cancel" class="btn btn-danger" aria-label="Bestehende Reservation stornieren">Reservation stornieren</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12">
+        <h2>Verfügbare Sitzungszimmer</h2>
+        <p class="text-muted">Sechs Räume für verschiedene Anlässe und Gruppengrößen stehen zur Verfügung.</p>
+        <a href="/rooms" class="btn btn-outline-primary" aria-label="Alle Sitzungszimmer anzeigen">Alle Räume anzeigen →</a>
+    </div>
+</div>
